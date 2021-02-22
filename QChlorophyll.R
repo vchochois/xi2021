@@ -38,6 +38,13 @@ setwd(dirname(rstudioapi::getActiveDocumentContext()$path))
 datafiles  = c("RGA4", "AVR-PikD", "RGA4 Strong") 
 
 for (f in datafiles) {
+  
+  if (file.exists(file.path("rawdata", f, "chlorophyll.csv")) == FALSE) 
+  {
+    next
+  } else 
+  {
+    
   df <- read.csv(file.path("rawdata", f, "chlorophyll.csv"))
   resultsfolder = file.path("results","chlorophyll", f)
   
@@ -181,7 +188,7 @@ for (f in datafiles) {
          unit=graph_unit,
          dpi=graph_dpi)
   
-  
+  }
 } 
 ##############################################################################################
 #                                 END OF FILE                                                #
