@@ -97,7 +97,6 @@ for (f in datafiles) {
 
   # plot variance/mean
   # visualize standard deviation/mean
-  windows()
   ggplot(ag, aes(x=mean, y=variance))+
     geom_point(shape=1) +
     geom_smooth(method="lm", se=FALSE) +
