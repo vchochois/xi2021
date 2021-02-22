@@ -1,11 +1,9 @@
 # Clear global environment
 rm(list = ls())
-
+library("tidyverse")
 
 # Config
 options(width=160)
-required_packages = c("tidyverse")
-
 
 # Graphics options
 graph_unit = "cm"   # unit for graphs sizes ("cm", "in" or "mm" )
@@ -14,45 +12,29 @@ graph_height = 25   # graph height
 graph_dpi = 600     # graph resolution (typically between 100 and 1200)
 plot_device = "png" # graph file extension
 
-
-
-# Load (and install if required) all required packages
-for (pkg in required_packages) {
-  if(pkg %in% rownames(installed.packages())) {
-    print(paste0(c(pkg, " - installed")))
-    library(pkg, character.only = TRUE)
-  } else {
-    print(paste0(c(pkg, " - installing...")))
-    install.packages(pkg)
-    library(pkg, character.only = TRUE)
-  }
-}
+datafiles  = c("RGA4", "AVR-PikD", "RGA4 Strong")
+assay_method = "chlorophyll"
 
 ##############################################################################################
 # Data Import and Transform
 ##############################################################################################
+
 # set current dir as WD
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) 
 
-# path to rawdata file  
-datafiles  = c("RGA4", "AVR-PikD", "RGA4 Strong") 
-
 for (f in datafiles) {
-  
-  if (file.exists(file.path("rawdata", f, "chlorophyll.csv")) == FALSE) 
+  if (file.exists(file.path("rawdata", f, paste0(assay_method, ".csv"))) == FALSE) 
   {
     next
-  } else 
-  {
+  } else {
     
-  df <- read.csv(file.path("rawdata", f, "chlorophyll.csv"))
-  resultsfolder = file.path("results","chlorophyll", f)
+  df <- read.csv(file.path("rawdata", f, paste0(assay_method, ".csv")))
+  resultsfolder = file.path("results", assay_method, f)
   
   # create folders if necessary
   dir.create("results", showWarnings = FALSE)
-  dir.create(file.path("results","chlorophyll"), showWarnings = FALSE)
+  dir.create(file.path("results",assay_method), showWarnings = FALSE)
   dir.create(resultsfolder, showWarnings = FALSE)
-  
   
   # data transform
   if (f =="RGA4") {
@@ -62,7 +44,6 @@ for (f in datafiles) {
   } else if (f=="RGA4 Strong"){
     trans <- function(x) x
   }
-  
   
   # Transform to long dataframe
   df2 <- reshape(df,
@@ -94,20 +75,16 @@ for (f in datafiles) {
     
   } else if (f=="RGA4 Strong"){
     df3$construct <- str_replace_all(df3$old.construct, c("A"="0", "B"="0.02", "C"="0.05", "D"="0.1", "E"="0.2", "F" = "0.5", "G"="None") )
-    
+  
   }
-
 
   # Convert columns format from character to factor
   df3$construct <- factor(df3$construct, levels=unique(df3$construct)); levels(df3$construct)
   df3$rep <- factor(df3$rep) ; levels(df3$rep)
   df3$construct.rep <- factor(df3$construct.rep) ; levels(df3$construct.rep)
   
-  
   # Export final dataframe to .RData file
   save(df3, file=file.path(resultsfolder, "df3.RData"))
-  
-  
   
   ##############################################################################################
   # Create boxplots from transformed data frame
@@ -120,7 +97,6 @@ for (f in datafiles) {
   ag1 <- aggregate(df3$surface,df3["construct.rep"],mean) ; names(ag1)[2] <- "mean"
   ag2 <- aggregate(df3$surface,df3["construct.rep"],var) ; names(ag2)[2] <- "variance"
   ag <- merge(ag1,ag2)
-  ag
 
   # plot variance/mean
   # visualize standard deviation/mean
@@ -143,17 +119,12 @@ for (f in datafiles) {
 
   # Create a table that associates columns "construct" and the corresponding calculated mean  
   ag <- aggregate(df3$surface,df3[c("construct")],mean)
-  ag
-  
-  # Transform the data for statistical analyses
   
   # Modify construct names using "nomenclature.csv"
   if (f =="RGA4") {
     df3$construct <- str_replace_all(df3$old.construct, c("A"="0", "B"="0.02", "C"="0.05", "D"="0.1", "E"="0.2", "F" = "0.5", "G"="None") )
-    
   } else if (f=="AVR-PikD"){
     df3$construct <- str_replace_all(df3$old.construct, c("A"="0", "B"="0.02", "C"="0.05", "D"="0.1", "E"="0.2", "F" = "0.4", "G"="None") )
-    
   } else if (f=="RGA4 Strong"){
     df3$construct <- str_replace_all(df3$old.construct, c("A"="0", "B"="0.1", "C"="0.2", "D"="0.3", "E"="0.4", "F" = "0.5", "G"="0.6", "H"="None") )
   }
@@ -178,7 +149,6 @@ for (f in datafiles) {
                aes(color=factor(rep)), show.legend = F) +
     stat_summary(fun=mean, geom="point", shape=20, size=5, color="blue", fill="blue")
     
-  
   # Save boxplot
   ggsave(filename= paste0("boxplot.", plot_device),
          path = resultsfolder,
@@ -190,6 +160,4 @@ for (f in datafiles) {
   
   }
 } 
-##############################################################################################
-#                                 END OF FILE                                                #
-##############################################################################################
+# end of file

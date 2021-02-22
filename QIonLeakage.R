@@ -1,9 +1,9 @@
 # Clear global environment
 rm(list = ls())
+library("tidyverse")
 
 # Config
 options(width=160)
-required_packages = c("tidyverse")
 
 # Graphics options
 graph_unit = "cm"   # unit for graphs sizes ("cm", "in" or "mm" )
@@ -12,50 +12,29 @@ graph_height = 25   # graph height
 graph_dpi = 600     # graph resolution (typically between 100 and 1200)
 plot_device = "png" # graph file extension
 
-
-
-
-# Load (and install if required) all required packages
-for (pkg in required_packages) {
-  if(pkg %in% rownames(installed.packages())) {
-    print(paste0(c(pkg, " - installed")))
-    library(pkg, character.only = TRUE)
-  } else {
-    print(paste0(c(pkg, " - installing...")))
-    install.packages(pkg)
-    library(pkg, character.only = TRUE)
-  }
-}
-
+datafiles  = c("RGA4", "AVR-PikD", "RGA4 Strong") 
+assay_method = "ion_leakage"
 
 ##############################################################################################
 # Data Import and Transform
 ##############################################################################################
+
 # set current dir as WD
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) 
 
-# path to rawdata file  
-datafiles  = c("RGA4", "AVR-PikD", "RGA4 Strong") 
-
-f="RGA4"
-
-
 for (f in datafiles) {
-  
-  if (file.exists(file.path("rawdata", f, "ion_leakage.csv")) == FALSE) 
+  if (file.exists(file.path("rawdata", f, paste0(assay_method, ".csv"))) == FALSE) 
   {
     next
-  } else 
-  {
-  df <- read.csv(file.path("rawdata", f, "ion_leakage.csv"))
-  
-  resultsfolder = file.path("results","ion_leakage", f)
-  
-  # create folders if necessary
-  dir.create("results", showWarnings = FALSE)
-  dir.create(file.path("results","ion_leakage"), showWarnings = FALSE)
-  dir.create(resultsfolder, showWarnings = FALSE)
-  
+  } else {
+    
+    df <- read.csv(file.path("rawdata", f, paste0(assay_method, ".csv")))
+    resultsfolder = file.path("results", assay_method, f)
+    
+    # create folders if necessary
+    dir.create("results", showWarnings = FALSE)
+    dir.create(file.path("results",assay_method), showWarnings = FALSE)
+    dir.create(resultsfolder, showWarnings = FALSE)
   
   # data transform
   if (f =="RGA4") {
@@ -104,16 +83,12 @@ for (f in datafiles) {
   df3$rep <- factor(df3$rep) ; levels(df3$rep)
   df3$construct.rep <- factor(df3$construct.rep) ; levels(df3$construct.rep)
   
-  
   # Export final dataframe to .RData file
   save(df3, file=file.path(resultsfolder, "df3.RData"))
-  
-  
-  
+
   ##############################################################################################
   # Create boxplots from transformed data frame
   ##############################################################################################
-  
   # Re-import data if necessary (if scripts are saved separately)
   if (!exists("df3")) {load(file.path(outfolder,"df3.RData"))}
   
@@ -121,8 +96,7 @@ for (f in datafiles) {
   ag1 <- aggregate(df3$surface,df3["construct.rep"],mean) ; names(ag1)[2] <- "mean"
   ag2 <- aggregate(df3$surface,df3["construct.rep"],var) ; names(ag2)[2] <- "variance"
   ag <- merge(ag1,ag2)
-  ag
-  
+
   # plot variance/mean
   # visualize standard deviation/mean
   windows()
@@ -144,8 +118,7 @@ for (f in datafiles) {
   
   # Create a table that associates columns "construct" and the corresponding calculated mean  
   ag <- aggregate(df3$surface,df3[c("construct")],mean)
-  ag
-  
+
   # plot labels
   labels <- c(5,10,15,20,25,30,35)
   xtitle = paste0(ifelse(f=="AVR-PikD", f, "RGA4"), " (OD600)")
@@ -159,12 +132,11 @@ for (f in datafiles) {
           axis.title.x = element_text(size = 30,face="bold",margin = margin(t =20 , r = , b =, l = )))  +
     scale_x_discrete(limits=levels(df3$construct)) +
     scale_y_continuous(breaks=labels, labels=labels) +
-    labs(x=xtitle, y="Conductivity (µg/cm)") +
+    labs(x=xtitle, y="Conductivity (µS/cm)") +
     geom_boxplot(outlier.color = "white", aes(fill=construct), alpha=0.3) +
     geom_point(position=position_jitterdodge(jitter.width=0.0, dodge.width = 0.3), cex=3, alpha=0.3,
                aes(color=factor(rep)), show.legend = F) +
     stat_summary(fun=mean, geom="point", shape=20, size=5, color="blue", fill="blue")
-  
   
   # Save boxplot
   ggsave(filename= paste0("boxplot.", plot_device),
@@ -177,7 +149,4 @@ for (f in datafiles) {
   
   }
 }
-
-##############################################################################################
-#                                 END OF FILE                                                #
-##############################################################################################
+# end of file

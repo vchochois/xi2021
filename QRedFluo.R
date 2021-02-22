@@ -1,11 +1,9 @@
 # Clear global environment
 rm(list = ls())
-
+library("tidyverse")
 
 # Config
 options(width=160)
-required_packages = c("tidyverse")
-
 
 # Graphics options
 graph_unit = "cm"   # unit for graphs sizes ("cm", "in" or "mm" )
@@ -14,47 +12,29 @@ graph_height = 25   # graph height
 graph_dpi = 600     # graph resolution (typically between 100 and 1200)
 plot_device = "png" # graph file extension
 
-
-
-
-
-
-# Load (and install if required) all required packages
-for (pkg in required_packages) {
-  if(pkg %in% rownames(installed.packages())) {
-    print(paste0(c(pkg, " - installed")))
-    library(pkg, character.only = TRUE)
-  } else {
-    print(paste0(c(pkg, " - installing...")))
-    install.packages(pkg)
-    library(pkg, character.only = TRUE)
-  }
-}
+datafiles  = c("RGA4", "AVR-PikD", "RGA4 Strong") 
+assay_method = "fluorescence"
 
 ##############################################################################################
 # Data Import and Transform
 ##############################################################################################
+
 # set current dir as WD
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) 
 
-# path to raw data files 
-datafiles  = c("RGA4", "AVR-PikD", "RGA4 Strong") 
-
 for (f in datafiles) {
-  if (file.exists(file.path("rawdata", f, "visual.csv")) == FALSE) 
+  if (file.exists(file.path("rawdata", f, paste0(assay_method, ".csv"))) == FALSE) 
   {
     next
-  } else 
-  {
+  } else {
     
-  df <- read.csv(file.path("rawdata", f, "fluorescence.csv"))
-  
-  resultsfolder = file.path("results","fluorescence", f)
-  
-  # create folders if necessary
-  dir.create("results", showWarnings = FALSE)
-  dir.create(file.path("results","fluorescence"), showWarnings = FALSE)
-  dir.create(resultsfolder, showWarnings = FALSE)
+    df <- read.csv(file.path("rawdata", f, paste0(assay_method, ".csv")))
+    resultsfolder = file.path("results", assay_method, f)
+    
+    # create folders if necessary
+    dir.create("results", showWarnings = FALSE)
+    dir.create(file.path("results",assay_method), showWarnings = FALSE)
+    dir.create(resultsfolder, showWarnings = FALSE)
   
   # data transform
   if (f =="RGA4") {
@@ -72,8 +52,6 @@ for (f in datafiles) {
                  times=names(df)[1:ncol(df)],
                  v.names="surface",direction="long")
   
-  
-
   # Reset row labels
   rownames(df2) <- NULL
   
@@ -109,20 +87,14 @@ for (f in datafiles) {
   save(df3, file=file.path(resultsfolder, "df3.RData"))
   
   
-  
   ##############################################################################################
   # Create boxplots from transformed data frame
   ##############################################################################################
-  
-  # Re-import data if necessary (if scripts are saved separately)
-  if (!exists("df3")) {load(file.path(outfolder,"df3.RData"))}
-  
   # Calculate means and variances (for "construct.rep") and create a data frame
   ag1 <- aggregate(df3$surface,df3["construct.rep"],mean) ; names(ag1)[2] <- "mean"
   ag2 <- aggregate(df3$surface,df3["construct.rep"],var) ; names(ag2)[2] <- "variance"
   ag <- merge(ag1,ag2)
-  ag
-  
+
   # plot variance/mean
   # visualize standard deviation/mean
   windows()
@@ -144,12 +116,10 @@ for (f in datafiles) {
   
   # Create a table that associates columns "construct" and the corresponding calculated mean  
   ag <- aggregate(df3$surface,df3[c("construct")],mean)
-  ag
 
   # plot labels
   labels <- c(5000,10000,15000,20000,25000)
   xtitle = paste0(ifelse(f=="AVR-PikD", f, "RGA4"), " (OD600)")
-  
   
   # Create a vertical boxplot (several options available: violin etc. See ggplot plots in R supporting documentation)
   ggplot(df3, aes(x=construct,y=surface)) +
@@ -166,7 +136,6 @@ for (f in datafiles) {
                aes(color=factor(rep)), show.legend = F) +
     stat_summary(fun=mean, geom="point", shape=20, size=5, color="blue", fill="blue")
   
-  
   # Save boxplot
   ggsave(filename= paste0("boxplot.", plot_device),
          path = resultsfolder,
@@ -178,7 +147,4 @@ for (f in datafiles) {
   
  }
 }
-
-##############################################################################################
-#                                 END OF FILE                                                #
-##############################################################################################
+# end of file

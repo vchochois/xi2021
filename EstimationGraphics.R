@@ -1,7 +1,6 @@
 # Clear global environment
 rm(list = ls())
 
-
 ##############################################################################################
 # 1.Configuration
 setwd(dirname(rstudioapi::getActiveDocumentContext()$path)) # set current dir as WD
@@ -12,15 +11,14 @@ dec = "."   # decimal character for raw data files("." or ",")
 required_packages = c("tidyverse","tools","RColorBrewer","devtools", "rlang", "besthr","cowplot")
 nits = 1000 # A number of bootstrap iteration (default = 1000)
 
+datafiles  = c("RGA4", "AVR-PikD", "RGA4 Strong") 
+assay_method = "visual"
 #---------------------------------------------------------------------------------------------
 
 # Graphics parameters
 graph_unit = "cm"   # unit for graphs sizes ("cm", "in" or "mm" )
 graph_dpi = 600     # graph resolution (typically between 100 and 1200)
 plot_device = "png" # graph file extension
-
-#---------------------------------------------------------------------------------------------
-
 
 ##############################################################################################
 # the "dot_plot" and "plot_hrest" functions from https://rdrr.io/github/TeamMacLean/besthr/
@@ -96,14 +94,8 @@ myplot.hrest <- function(hrest, which = "rank_simulation"){
 }
 
 
-
-
-
-
 ##############################################################################################
-# Run script
-
-## chargement (ou installation si nécessaire) des packages nécessaires
+# Load (and install if necessary) all required packages
 for (pkg in required_packages) {
   if(pkg %in% rownames(installed.packages())) {
     print(paste0(c(pkg, " - installé")))
@@ -119,26 +111,22 @@ for (pkg in required_packages) {
     library(pkg, character.only = TRUE)
   }
 }
-
 ##############################################################################################
-
-
 # path to rawdata file  
-datafiles  = c("RGA4", "AVR-PikD", "RGA4 Strong") 
 
 for (f in datafiles) {
-  
-  if (file.exists(file.path("rawdata", f, "visual.csv")) == FALSE) 
+  if (file.exists(file.path("rawdata", f, paste0(assay_method, ".csv"))) == FALSE) 
   {
     next
-  } else 
-  {
-  resultsfolder = file.path("results","visual", f)
-  
-  # create folders if necessary
-  dir.create("results", showWarnings = FALSE)
-  dir.create(file.path("results","visual"), showWarnings = FALSE)
-  dir.create(resultsfolder, showWarnings = FALSE)
+  } else {
+    
+    df <- read.csv(file.path("rawdata", f, paste0(assay_method, ".csv")))
+    resultsfolder = file.path("results", assay_method, f)
+    
+    # create folders if necessary
+    dir.create("results", showWarnings = FALSE)
+    dir.create(file.path("results",assay_method), showWarnings = FALSE)
+    dir.create(resultsfolder, showWarnings = FALSE)
   
   # load data
   scores <- read.csv(file.path("rawdata", f, "visual.csv")) %>% 
@@ -153,7 +141,6 @@ for (f in datafiles) {
       scores$Treatment <- str_replace_all(scores$Treatment, c("A"="0", "B"="0.02", "C"="0.05", "D"="0.1", "E"="0.2", "F" = "0.5") )
     }
     
-    
     scores$Treatment = factor(scores$Treatment)
     scores$rep = factor(scores$rep)
     
@@ -161,15 +148,12 @@ for (f in datafiles) {
     write.csv(scores, file.path(resultsfolder, paste0("scores.csv")))
     save(scores, file=file.path(resultsfolder, "scores.RData"))
     
-    
     # get filename
     xtitle = paste0(ifelse(f=="AVR-PikD", f, "RGA4"), " (OD600)")
 
-    
     # dotplots
     graph_width = 25   # graph width
     graph_height = 34   # graph height
-    
     
     ggplot(data=scores,aes(x=Treatment, y=value,  color=Treatment)) +
       geom_count(alpha=0.3, aes(color=Treatment)) +
@@ -190,7 +174,6 @@ for (f in datafiles) {
                             title.position = "left",
                             label.position="top",
                             order=1))
-
     
     ggsave(filename= paste0("dotplot",".",plot_device),
            path = resultsfolder,
@@ -200,14 +183,10 @@ for (f in datafiles) {
            unit=graph_unit,
            dpi=graph_dpi)
     
-    
-    
     ##############################################################################################
     # calculate bootstrap HR object creation
     hr <- estimate(scores, value, Treatment,  rep, control=0, nits=nits)
-    hr
-    
-    
+
     ##############################################################################################
     # ranks estimates graph
 
@@ -215,8 +194,7 @@ for (f in datafiles) {
     graph_height = 30   # graph height
     
     hr %>% myplot.hrest(which = "rank_simulation")
-    
-    
+  
     ggsave(filename= paste0("est_ranks",".",plot_device),
            path = resultsfolder,
            device=plot_device,
@@ -224,7 +202,7 @@ for (f in datafiles) {
            height=graph_height,
            unit=graph_unit,
            dpi=graph_dpi)
-    
 
   }
 }
+# end of file
