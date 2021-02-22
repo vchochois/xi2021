@@ -147,9 +147,8 @@ for (f in datafiles) {
       separate(col=key, into=c("Treatment","rep"), sep=1)
     
     # translate treatment names
-    if (f=="RGA4 strong.csv") {
+    if (f=="RGA4 strong") {
       scores$Treatment <- str_replace_all(scores$Treatment, c("A"="0", "B"="0.1", "C"="0.2", "D"="0.3", "E"="0.4", "F" = "0.5", "G" = "0.6") )
-
     }  else {
       scores$Treatment <- str_replace_all(scores$Treatment, c("A"="0", "B"="0.02", "C"="0.05", "D"="0.1", "E"="0.2", "F" = "0.5") )
     }
