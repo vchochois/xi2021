@@ -28,9 +28,10 @@ graph_unit = "cm"   # unit for graphs' width and height ("cm", "in" or "mm" )
 graph_width = 30    # graph width
 graph_height = 25   # graph height
 graph_dpi = 600     # graph resolution (typically between 100 and 1200)
-plot_device = "png" # graph file extension
+plot_device = "png"
 
-fixed_palette <- scales::hue_pal()(8)
+alpha=0.5  # dotplots/boxplots alpha
+
 
 ################################################################################
 # Data Import and Transform
@@ -42,6 +43,22 @@ for (f in datafiles) {
     warning(paste0(f, "skipped. No data file found."))
     next
   }
+
+  # custom palette
+  if (f =="RGA4") {
+    palette_values = c("0", "0.02", "0.05", "0.1", "0.2", "0.5", "None","")
+    custom_palette = c("#F8766D", "#D89000", "#A3A500", "#00BF7D", "#00BFC4", "#00B0F6", "#aaaaaa", "#000000")
+
+  } else if (f=="AVR-PikD"){
+    palette_values = c("0", "0.02", "0.05", "0.1", "0.2", "0.4", "None","")
+    custom_palette = c("#F8766D", "#D89000", "#A3A500", "#00BF7D", "#00BFC4", "#00B0F6", "#aaaaaa", "#000000")
+
+  } else if (f=="RGA4 Strong"){
+    palette_values = c("0", "0.1", "0.2", "0.3", "0.4", "0.5", "0.6","None","")
+    custom_palette = c("#F8766D", "#D89000", "#A3A500", "#00BF7D", "#00BFC4", "#00B0F6", "#9590FF", "#aaaaaa", "#000000")
+  }
+  names(custom_palette) = palette_values
+
 
   df <- read.csv(file.path("rawdata", f, paste0(assay_method, ".csv")))
   resultsfolder = file.path(getwd(), "results", assay_method, f)
@@ -95,6 +112,9 @@ for (f in datafiles) {
   df3$rep <- factor(df3$rep) ; levels(df3$rep)
   df3$construct.rep <- factor(df3$construct.rep) ; levels(df3$construct.rep)
 
+  # add a "colour" column to dataframe for colour consistency across samples and experiments
+  # df3 = merge(df3, custom_palette, by.x="construct", by.y="val")
+
   # Export final dataframe to .RData file
   save(df3, file=file.path(resultsfolder, "df3.RData"))
 
@@ -139,14 +159,14 @@ for (f in datafiles) {
     scale_x_discrete(limits=levels(df3$construct)) +
     scale_y_continuous(breaks=labels, labels=labels) +
     labs(x=xtitle, y="Total chlorophyll (mg/L)") +
-    scale_fill_manual(values=fixed_palette) +
-    geom_boxplot(outlier.color="white", aes(fill=construct), alpha=0.4) +
-    geom_point(position=position_jitterdodge(jitter.width=0.0, dodge.width=0.4), cex=3, alpha=0.4,
+    scale_fill_manual(values=custom_palette) +
+    geom_boxplot(outlier.color="white", aes(fill=construct), alpha=alpha) +
+    geom_point(position=position_jitterdodge(jitter.width=0.0, dodge.width=0.4), cex=3, alpha=alpha,
                aes(color=factor(rep)), show.legend=F) +
     stat_summary(fun=mean, geom="point", shape=20, size=5, color="blue", fill="blue")
 
   # Save boxplot
-  ggsave(filename= paste0("boxplot.", plot_device),
+  ggsave(filename= paste0(f, "_", assay_method,"_", "boxplot.", plot_device),
          path = resultsfolder,
          device=plot_device,
          width=graph_height,
