@@ -1,4 +1,30 @@
 ################################################################################
+# Raw data file format guidelines
+################################################################################
+# Raw data files format must be ".CSV"
+
+# the separator is set by default on "," but can be set to other separators
+# by changing the variable 'sep' in the 'Configuration' section below
+
+# Raw data files must be stored in a subfolder in the "rawdata" folder
+
+# the name of this subfolder corresponds to the construct name
+# (for example "RGA4", "AVR-PikD" ...in our case)
+
+# Filenames must correspond to the string specified in the
+# "assay_method" variable below :
+# 'visual' for the visual scoring method data (EstimationGraphics.R)
+# 'chlorophyll' for the chlorophyll assay data (QChlorophyll.R)
+# 'ion_leakage' for the ion leakage assay data (QIonLeakage.R)
+# 'fluorescence' for the red fluorescence assay data (QRedFluo.R)
+
+# Letters (A, B, C...) correspond to cell concentrations or treatments (OD600).
+# Combining a number represents each independent experiments (A1, A2...).
+# In each column, each row represents a biological replicate in each experiment
+
+# see the provided sample file for each method in the rawdata_samples section
+
+################################################################################
 # Initialisation
 ################################################################################
 
@@ -69,7 +95,7 @@ for (f in datafiles) {
 
   # data transform
   if (f =="RGA4") {
-    trans <- function(x) x^0.4
+    trans <- function(x) x
   } else if (f=="AVR-PikD"){
     trans <- function(x) x
   } else if (f=="RGA4 Strong"){
